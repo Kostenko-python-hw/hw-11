@@ -1,6 +1,5 @@
 from collections import UserDict
-from datetime import datetime
-from utils import sanitize_phone_number, to_timestamp
+from utils import sanitize_phone_number, to_timestamp, timestamp_to_date, get_current_date
 
 
 class Field:
@@ -25,8 +24,10 @@ class Name(Field):
 
 class Birthday(Field):
     def __init__(self, value):
-        transformed_date = self.validate_and_transform(value)
-        self.value = transformed_date
+        transformed_date = ''
+        if value:
+            transformed_date = self.validate_and_transform(value)
+        super().__init__(transformed_date)
     
     def validate_and_transform(self, birthday):
         timestamp = to_timestamp(birthday)
@@ -49,9 +50,9 @@ class Phone(Field):
 
 
 class Record:
-    def __init__(self, name):
+    def __init__(self, name, birthday = ''):
         self.__name = Name(name)
-        self.__birthday = None
+        self.__birthday = Birthday(birthday)
         self.__phones = []
 
     @property
@@ -60,7 +61,7 @@ class Record:
     
     @property
     def birthday(self):
-        return self.__birthday.value
+        return self.__birthday
     
     @property
     def phones(self):
@@ -86,11 +87,9 @@ class Record:
         self.birthday = Birthday(date)
 
     def days_to_birthday(self):
-        print(type(self.birthday))
-        print(type(self.__birthday.value))
         if self.birthday:
-            birthday_date = datetime.fromtimestamp((self.birthday)).date()
-            current_date = datetime.today().date()
+            birthday_date = timestamp_to_date((self.birthday.value))
+            current_date = get_current_date()
             current_year = current_date.year
             next_birthday = birthday_date.replace(year=current_year)
             if next_birthday < current_date:
@@ -122,12 +121,9 @@ class Record:
         for el in self.phones:
             if phone == el.value:
                 return el
-            
-    
 
     def __str__(self):
-        print(self.__birthday)
-        return f"Contact name: {self.name}, phones: {'; '.join(p.value for p in self.phones)}"
+        return f"Contact name: {self.name}, phones: {'; '.join(p.value for p in self.phones)}{f', birthday: {timestamp_to_date(self.birthday.value)}' if timestamp_to_date(self.birthday.value) else ''}"
 
 
 class AddressBook(UserDict):
@@ -172,73 +168,9 @@ class AddressBook(UserDict):
             list_data = list(self.data.values())
             data = list_data[self.__current_index: self.__current_index + self.quantity_per_iter]
             self.__current_index += self.quantity_per_iter
-            print('*'*30)
-            return '; '.join([str(record) for record in data])
+            return '\n'.join([str(record) for record in data])
         raise StopIteration
 
     def __iter__(self):
         return self
 
-
-
- # Створення нової адресної книги
-book = AddressBook()
-
-    # Створення запису для John
-john_record = Record("John")
-john_record.add_phone("1234567890")
-john_record.add_phone("5555555555")
-john_record.add_birthday("16.11.1987")
-print('*'*20)
-print(john_record.days_to_birthday())
-print('*'*20)
-
-    # Додавання запису John до адресної книги
-book.add_record(john_record)
-
-    # Створення та додавання нового запису для Jane
-jane_record = Record("Jane")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-jane_record = Record("J123ane")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-jane_record = Record("Ja123ne")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-jane_record = Record("Janzzze")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-jane_record = Record("J123ssssane")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-jane_record = Record("Ja123ddddddne")
-jane_record.add_phone("9876543210")
-book.add_record(jane_record)
-
-    # Виведення всіх записів у книзі
-for name, record in book.data.items():
-    print(record)
-
-    # Знаходження та редагування телефону для John
-john = book.find("John")
-john.edit_phone("1234567890", "1112223333")
-
-print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
-
-    # Пошук конкретного телефону у записі John
-found_phone = john.find_phone("5555555555")
-print(f"{john.name}: {found_phone}")  # Виведення: 5555555555
-
-book.quantity_per_iter = 4
-_book = iter(book)
-for i in _book:
-    print(i)
-
-    # Видалення запису Jane
-# book.delete("Jane")

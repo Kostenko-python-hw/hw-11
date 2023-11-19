@@ -42,3 +42,10 @@ def to_timestamp(date):
         except ValueError:
             pass
     return False
+
+def timestamp_to_date(timestamp):
+    if timestamp:
+        return datetime.fromtimestamp((timestamp)).date()
+    
+def get_current_date():
+    return datetime.today().date()
