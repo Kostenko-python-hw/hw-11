@@ -4,7 +4,8 @@ from utils import sanitize_phone_number, to_timestamp, timestamp_to_date, get_cu
 
 class Field:
     def __init__(self, value):
-        self.__value = value
+        self.__value = None
+        self.value = value
     
     @property
     def value(self):
@@ -12,48 +13,53 @@ class Field:
 
     @value.setter
     def value(self, value):
-        self.__value = value
+        self.__value = self.validate_and_transform(value)
+
+    def validate_and_transform(self, _):
+        pass
 
     def __str__(self):
         return str(self.value)
 
 
 class Name(Field):
-    pass
+    def validate_and_transform(self, value):
+         if value.isalpha():
+            return value
+         else:
+            raise ValueError("The name must contain only letters.")
+             
 
 
 class Birthday(Field):
-    def __init__(self, value):
-        transformed_date = ''
-        if value:
-            transformed_date = self.validate_and_transform(value)
-        super().__init__(transformed_date)
-    
     def validate_and_transform(self, birthday):
-        timestamp = to_timestamp(birthday)
-        if timestamp:
-            return timestamp
+        if birthday:
+            timestamp = to_timestamp(birthday)
+            if timestamp:
+                return timestamp
+            else:
+                raise ValueError('Please enter the correct date.')
         else:
-            raise ValueError('Please enter the correct date.')
+            return ''
 
 
 class Phone(Field):
-    def __init__(self, value):
-        self.validate(value)
-        super().__init__(value)
-    
-    def validate(self, phone):
+    def validate_and_transform(self, phone):
         int(sanitize_phone_number(phone))
         sunitized_phone = sanitize_phone_number(phone)
         if len(sunitized_phone) != 10:
             raise ValueError('The phone number must be 10 characters long.')
+        else:
+            return sunitized_phone
 
 
 class Record:
     def __init__(self, name, birthday = ''):
-        self.__name = Name(name)
-        self.__birthday = Birthday(birthday)
+        self.__name = ''
+        self.__birthday = ''
         self.__phones = []
+        self.name = name
+        self.birthday = birthday
 
     @property
     def name(self):
@@ -69,22 +75,17 @@ class Record:
 
     @name.setter
     def name(self, value):
-        self.__name = value
+        self.__name = Name(value)
 
     @birthday.setter
     def birthday(self, value):
-        self.__birthday = value
-
-    @phones.setter
-    def phones(self, value):
-        self.__phones.append(Phone(value))
+        self.__birthday = Birthday(value)
 
     def add_phone(self, phone):
-        # self.phones.append(Phone(phone))
-        self.phones = phone
+        self.phones.append(Phone(phone))
 
-    def add_birthday(self, date):
-        self.birthday = Birthday(date)
+    def add_birthday(self, date): # This is not a mandatory function, but a duplicate birthday setter
+        self.birthday = date
 
     def days_to_birthday(self):
         if self.birthday:
@@ -129,8 +130,10 @@ class Record:
 class AddressBook(UserDict):
 
     def __init__(self):
-        self.__current_index = 0
-        self.__quantity_per_iter = 3
+        self.__current_index = None
+        self.__quantity_per_iter = None
+        self.current_index = 0
+        self.quantity_per_iter = 3
         super().__init__(self)
 
     @property
@@ -166,11 +169,10 @@ class AddressBook(UserDict):
     def __next__(self):
         if self.__current_index <= len(self.data) - 1:
             list_data = list(self.data.values())
-            data = list_data[self.__current_index: self.__current_index + self.quantity_per_iter]
-            self.__current_index += self.quantity_per_iter
+            data = list_data[self.current_index: self.current_index + self.quantity_per_iter]
+            self.current_index += self.quantity_per_iter
             return '\n'.join([str(record) for record in data])
         raise StopIteration
 
     def __iter__(self):
         return self
-
